@@ -14,19 +14,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
-Route::resource('posts', PostController::class)->only(['index', 'show']);
-Route::resource('posts', PostController::class)->except(['index', 'show'])->middleware('auth');
-
-Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
-Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show')->where('post', '[0-9]+');
-Route::middleware('auth')->group(function () {
-    Route::get('/posts/create', [PostController::class, 'create']);
-    Route::post('/posts', [PostController::class, 'store']);
-    Route::get('/posts/{post}/edit', [PostController::class, 'edit']);
-    Route::put('/posts/{post}', [PostController::class, 'update']);
-    Route::delete('/posts/{post}', [PostController::class, 'destroy']);
-});
-
+Route::resource('posts', PostController::class)
+    ->except(['index', 'show'])
+    ->middleware('auth');
+    
+Route::resource('posts', PostController::class)
+    ->only(['index', 'show']);
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

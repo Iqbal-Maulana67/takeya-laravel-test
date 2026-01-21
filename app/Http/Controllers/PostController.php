@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
+use App\Http\Resources\PostResource;
 use App\Models\Post;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -14,16 +15,11 @@ class PostController extends Controller
 {
     public function index()
     {
-        $posts = Post::with('user')
-            ->where('is_draft', false)
-            ->where('published_at', '<=', Carbon::now())
+        $posts = Post::active()
+            ->with('user')
             ->paginate(20);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Posts retrieved successfully',
-            'data' => $posts
-        ]);
+        return PostResource::collection($posts);
     }
 
     public function create()
@@ -35,32 +31,24 @@ class PostController extends Controller
     {
         $post = Post::create([
             'user_id' => Auth::id(),
-            'title' => $request->title,
-            'content' => $request->content,
-            'is_draft' => $request->boolean('is_draft'),
-            'published_at' => $request->published_at,
+            ...$request->validated(),
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Post created successfully',
-            'data' => $post,
-        ], 201);
+        return response()->json(
+            new PostResource($post),
+            201
+        );
     }
 
-    public function show($id)
+    public function show(Post $post)
     {
-        $post = Post::with('user')
-            ->where('id', $id)
-            ->where('is_draft', false)
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', Carbon::now())
-            ->firstOrFail();
+        if (! $post->is_draft && $post->published_at <= now()) {
+            return new PostResource(
+                $post->load('user')
+            );
+        }
 
-        return response()->json([
-            'success' => true,
-            'data' => $post,
-        ]);
+        abort(404);
     }
 
     public function edit(Post $post)
@@ -73,13 +61,11 @@ class PostController extends Controller
     {
         Gate::authorize('update', $post);
 
-        $post->update($request->only(['title', 'content', 'is_draft', 'published_at']));
+        $post->update($request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Post updated successfully',
-            'data' => $post,
-        ]);
+        return response()->json(
+            new PostResource($post)
+        );
     }
 
     public function destroy(Post $post)
