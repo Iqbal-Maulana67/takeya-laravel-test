@@ -17,7 +17,6 @@ class PostController extends Controller
         $posts = Post::with('user')
             ->where('is_draft', false)
             ->where('published_at', '<=', Carbon::now())
-            ->latest('published_at')
             ->paginate(20);
 
         return response()->json([
@@ -25,6 +24,11 @@ class PostController extends Controller
             'message' => 'Posts retrieved successfully',
             'data' => $posts
         ]);
+    }
+
+    public function create()
+    {
+        return 'posts.create';
     }
 
     public function store(StorePostRequest $request)
@@ -44,11 +48,6 @@ class PostController extends Controller
         ], 201);
     }
 
-    public function create()
-    {
-        return 'posts.create';
-    }
-
     public function show($id)
     {
         $post = Post::with('user')
@@ -63,7 +62,6 @@ class PostController extends Controller
             'data' => $post,
         ]);
     }
-
 
     public function edit(Post $post)
     {
